@@ -4,6 +4,8 @@ import functools
 import operator
 import weakref
 import inspect
+from itertools import chain
+import types
 
 PY2 = sys.version_info[0] == 2
 
@@ -15,6 +17,10 @@ else:
 def with_metaclass(meta, *bases):
     """Create a base class with a metaclass."""
     return meta("NewBase", bases, {})
+
+def slots(obj):
+    return chain.from_iterable(getattr(cls, '__slots__', [])
+                               for cls in type(obj).__mro__)
 
 class _ObjectProxyMethods(object):
 
@@ -72,7 +78,7 @@ class _ObjectProxyMetaType(type):
 
 class ObjectProxy(with_metaclass(_ObjectProxyMetaType)):
 
-    __slots__ = '__wrapped__'
+    __slots__ = ('__wrapped__',)
 
     def __init__(self, wrapped):
         object.__setattr__(self, '__wrapped__', wrapped)
@@ -201,12 +207,24 @@ class ObjectProxy(with_metaclass(_ObjectProxyMetaType)):
         else:
             setattr(self.__wrapped__, name, value)
 
+    def __getattribute__(self, name):
+        try:
+            if name in slots(self):
+                return super().__getattribute__(name)
+        except AttributeError:
+            pass
+
+        return self.__wrapped__.__getattribute__(name)
+
     def __getattr__(self, name):
-        # If we are being to lookup '__wrapped__' then the
+        # If we are being asked to lookup '__wrapped__' then the
         # '__init__()' method cannot have been called.
 
         if name == '__wrapped__':
             raise ValueError('wrapper has not been initialised')
+
+        if name in slots(self):
+            return super().__getattr__(name)
 
         return getattr(self.__wrapped__, name)
 
@@ -454,6 +472,7 @@ class CallableObjectProxy(ObjectProxy):
         return self.__wrapped__(*args, **kwargs)
 
 class PartialCallableObjectProxy(ObjectProxy):
+    __slots__ = ('_self_args', '_self_kwargs')
 
     def __init__(*args, **kwargs):
         def _unpack_self(self, *args):
@@ -471,8 +490,8 @@ class PartialCallableObjectProxy(ObjectProxy):
 
         super(PartialCallableObjectProxy, self).__init__(wrapped)
 
-        self._self_args = args
-        self._self_kwargs = kwargs
+        object.__setattr__(self, '_self_args', args)
+        object.__setattr__(self, '_self_kwargs', kwargs)
 
     def __call__(*args, **kwargs):
         def _unpack_self(self, *args):
@@ -533,7 +552,7 @@ class _FunctionWrapperBase(ObjectProxy):
             if not inspect.isclass(self.__wrapped__):
                 descriptor = self.__wrapped__.__get__(instance, owner)
 
-                return self.__bound_function_wrapper__(descriptor, instance,
+                return BoundFunctionWrapper(descriptor, instance,
                         self._self_wrapper, self._self_enabled,
                         self._self_binding, self)
 
@@ -552,7 +571,7 @@ class _FunctionWrapperBase(ObjectProxy):
             descriptor = self._self_parent.__wrapped__.__get__(
                     instance, owner)
 
-            return self._self_parent.__bound_function_wrapper__(
+            return BoundFunctionWrapper(
                     descriptor, instance, self._self_wrapper,
                     self._self_enabled, self._self_binding,
                     self._self_parent)
@@ -626,6 +645,25 @@ class _FunctionWrapperBase(ObjectProxy):
             return issubclass(subclass, self.__wrapped__)
 
 class BoundFunctionWrapper(_FunctionWrapperBase):
+
+    def __new__(cls, *args, **kwargs):
+        # In addition to constructing a BoundFoundWrapper internally,
+        # we need to be able to handle being created as if we were an
+        # instance of types.BoundMethod. Creating and using a weakref
+        # to a bound function relies on being able to do this. Since a
+        # BFW stands in for just such a function, it must support it.
+        #
+        # Maybe there's a better way of distinguishing these two
+        # cases, but for now, use the number of arguments. When we're
+        # constructed with 2, return a types.BoundMethod. When we're
+        # constructed with more than 2, return an instance of
+        # BoundFunctionWrapper.
+        if len(args) == 2:
+            func = args[0]      # the function
+            obj = args[1]       # the object it's bound to
+            return types.MethodType(func, obj)
+
+        return super(BoundFunctionWrapper, cls).__new__(cls)
 
     def __call__(*args, **kwargs):
         def _unpack_self(self, *args):
