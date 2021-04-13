@@ -4,12 +4,12 @@ import unittest
 import inspect
 import imp
 
-import wrapt
+import appmap.wrapt as wrapt
 
 from compat import PY2, PY3, exec_
 
 DECORATORS_CODE = """
-import wrapt
+import appmap.wrapt as wrapt
 
 @wrapt.decorator
 def passthru_decorator(wrapped, instance, args, kwargs):

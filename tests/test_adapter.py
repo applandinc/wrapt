@@ -4,12 +4,12 @@ import unittest
 import inspect
 import imp
 
-import wrapt
+import appmap.wrapt as wrapt
 
 from compat import PY2, PY3, exec_
 
 DECORATORS_CODE = """
-import wrapt
+import appmap.wrapt as wrapt
 
 def prototype(arg1, arg2, arg3=None, *args, **kwargs): pass
 @wrapt.decorator(adapter=prototype)

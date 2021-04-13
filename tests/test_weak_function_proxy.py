@@ -3,7 +3,7 @@ from __future__ import print_function
 import unittest
 import gc
 
-import wrapt
+import appmap.wrapt as wrapt
 
 class TestWeakFunctionProxy(unittest.TestCase):
 

@@ -3,8 +3,8 @@ from __future__ import print_function
 import unittest
 import sys
 
-import wrapt
-from wrapt.importer import _post_import_hooks
+import appmap.wrapt as wrapt
+from appmap.wrapt.importer import _post_import_hooks
 
 class TestPostImportHooks(unittest.TestCase):
 

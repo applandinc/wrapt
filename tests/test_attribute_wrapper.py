@@ -2,7 +2,7 @@ from __future__ import print_function
 
 import unittest
 
-import wrapt
+import appmap.wrapt as wrapt
 
 class Class(object):
     def __init__(self, value):

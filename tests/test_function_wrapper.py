@@ -2,8 +2,7 @@ from __future__ import print_function
 
 import unittest
 
-import wrapt
-import wrapt.wrappers
+import appmap.wrapt as wrapt
 
 from compat import PY2, PY3, exec_
 

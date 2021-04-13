@@ -3,7 +3,7 @@ from __future__ import print_function
 import unittest
 import sys
 
-import wrapt
+import appmap.wrapt as wrapt
 
 def global_function_1(*args, **kwargs):
     return args, kwargs

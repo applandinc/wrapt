@@ -4,7 +4,7 @@ import unittest
 
 import pickle
 
-import wrapt
+import appmap.wrapt as wrapt
 
 class CustomObjectProxy(wrapt.ObjectProxy):
 

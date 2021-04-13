@@ -4,7 +4,7 @@ import unittest
 import threading
 import inspect
 
-import wrapt
+import appmap.wrapt as wrapt
 
 @wrapt.decorator
 def memoize(wrapped, instance, args, kwargs):

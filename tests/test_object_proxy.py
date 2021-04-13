@@ -7,7 +7,7 @@ import sys
 
 is_pypy = '__pypy__' in sys.builtin_module_names
 
-import wrapt
+import appmap.wrapt as wrapt
 
 from compat import PY2, PY3, exec_
 

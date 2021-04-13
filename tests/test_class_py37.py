@@ -4,7 +4,7 @@ import unittest
 import inspect
 import imp
 
-import wrapt
+import appmap.wrapt as wrapt
 
 from compat import PY2, PY3, exec_
 
