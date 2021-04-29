@@ -482,7 +482,7 @@ class PartialCallableObjectProxy(ObjectProxy):
 class _FunctionWrapperBase(ObjectProxy):
 
     __slots__ = ('_self_instance', '_self_wrapper', '_self_enabled',
-            '_self_binding', '_self_parent')
+                 '_self_binding', '_self_parent', '_bfws')
 
     def __init__(self, wrapped, instance, wrapper, enabled=None,
             binding='function', parent=None):
@@ -494,6 +494,7 @@ class _FunctionWrapperBase(ObjectProxy):
         object.__setattr__(self, '_self_enabled', enabled)
         object.__setattr__(self, '_self_binding', binding)
         object.__setattr__(self, '_self_parent', parent)
+        object.__setattr__(self, '_bfws', list())
 
     def __get__(self, instance, owner):
         # This method is actually doing double duty for both unbound and
@@ -524,10 +525,12 @@ class _FunctionWrapperBase(ObjectProxy):
         if self._self_parent is None:
             if not inspect.isclass(self.__wrapped__):
                 descriptor = self.__wrapped__.__get__(instance, owner)
-
-                return BoundFunctionWrapper(descriptor, instance,
-                        self._self_wrapper, self._self_enabled,
-                        self._self_binding, self)
+                ret = BoundFunctionWrapper(
+                    descriptor, instance,
+                    self._self_wrapper, self._self_enabled,
+                    self._self_binding, self)
+                self._bfws.append(ret)
+                return ret
 
             return self
 
@@ -544,10 +547,12 @@ class _FunctionWrapperBase(ObjectProxy):
             descriptor = self._self_parent.__wrapped__.__get__(
                     instance, owner)
 
-            return BoundFunctionWrapper(
-                    descriptor, instance, self._self_wrapper,
-                    self._self_enabled, self._self_binding,
-                    self._self_parent)
+            ret = BoundFunctionWrapper(
+                descriptor, instance, self._self_wrapper,
+                self._self_enabled, self._self_binding,
+                self._self_parent)
+            self._bfws.append(ret)
+            return ret
 
         return self
 
