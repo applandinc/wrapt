@@ -209,7 +209,7 @@ class ObjectProxy(with_metaclass(_ObjectProxyMetaType)):
 
     def __getattribute__(self, name):
         try:
-            if name in slots(self):
+            if name in chain(slots(self), ["__reduce__", "__reduce_ex__"]):
                 return super().__getattribute__(name)
         except AttributeError:
             pass
@@ -734,6 +734,13 @@ class BoundFunctionWrapper(_FunctionWrapperBase):
 class FunctionWrapper(_FunctionWrapperBase):
 
     __bound_function_wrapper__ = BoundFunctionWrapper
+
+    # The code here is pretty complicated (see the comment below), and it's not completely clear to
+    # me whether it actually keeps any state. If it does, __reduce_ex__ needs to return a tuple so a
+    # new FunctionWrapper will be created. If it doesn't, then __reduce_ex__ could simply return a
+    # string, which would cause deepcopy to return the original FunctionWrapper.
+    def __reduce_ex__(self, protocol):
+        return FunctionWrapper, (self.__wrapped__, self._self_wrapper, self._self_enabled)
 
     def __init__(self, wrapped, wrapper, enabled=None):
         # What it is we are wrapping here could be anything. We need to
