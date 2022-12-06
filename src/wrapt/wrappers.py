@@ -737,10 +737,21 @@ class FunctionWrapper(_FunctionWrapperBase):
 
     # The code here is pretty complicated (see the comment below), and it's not completely clear to
     # me whether it actually keeps any state. If it does, __reduce_ex__ needs to return a tuple so a
-    # new FunctionWrapper will be created. If it doesn't, then __reduce_ex__ could simply return a
+    # new FunctionWrapper will be created. If it doesn't, then __reduce_ex__ can simply return a
     # string, which would cause deepcopy to return the original FunctionWrapper.
+    #
+    # Update: We'll return the qualname of the wrapped function instead of a tuple allows a
+    # FunctionWrapper to be pickled (as the function it wraps). This seems to be adequate for
+    # generating AppMaps, so go with that.
+
     def __reduce_ex__(self, protocol):
-        return FunctionWrapper, (self.__wrapped__, self._self_wrapper, self._self_enabled)
+         return self.__wrapped__.__qualname__
+ 
+         # return FunctionWrapper, (
+         #     self.__wrapped__,
+         #     self._self_wrapper,
+         #     self._self_enabled,
+         # )
 
     def __init__(self, wrapped, wrapper, enabled=None):
         # What it is we are wrapping here could be anything. We need to
